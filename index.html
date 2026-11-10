@@ -162,6 +162,8 @@ button { cursor: pointer; }
 .rb:disabled { opacity: .35; cursor: not-allowed; }
 .cbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; border: 1px solid var(--warn); border-radius: 18px; padding: 5px 6px 5px 12px; background: var(--bg); font-size: 13px; }
 .cbar .ct { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+#datactl .cbar, #list .empty .cbar { flex-wrap: nowrap; }
+#datactl .cbar .ct, #list .empty .cbar .ct { flex: 1 1 0; }
 .cbar .pb { border: 0; border-radius: 99px; min-height: 28px; padding: 0 12px; font-size: 13px; font-weight: 600; background: var(--line); color: var(--fg); flex: none; }
 .cbar .pb.yes { background: var(--warn); color: #fff; }
 .cbar .pb.yes[data-act="del-yes"] { background: #c62828; color: #fff; }
@@ -236,7 +238,12 @@ textarea { min-height: 84px; resize: vertical; font-size: 12px; font-family: ui-
 .exitbtns .btn { flex: 1; }
 .btns { display: flex; gap: 8px; flex-wrap: wrap; }
 .btns > * { flex: 1 1 140px; }
+#datactl > .btn { flex: 1 1 100%; }
+#datactl > .btn[data-act="clear"] { background: #c62828; color: #fff; border-color: #c62828; }
 .err { color: var(--warn); font-size: 13px; min-height: 18px; }
+#bkbanner[hidden] { display: none !important; }
+#bkbanner .btn { flex: none; min-height: 32px; padding: 0 12px; font-size: 13px; border-radius: 99px; }
+#copymsg:empty, #restoremsg:empty, #lastbk:empty { display: none; }
 
 .day { display: flex; flex-direction: column; gap: 4px; }
 .dayhead { display: flex; justify-content: space-between; align-items: baseline; padding: 0 2px; }
@@ -280,6 +287,14 @@ textarea { min-height: 84px; resize: vertical; font-size: 12px; font-family: ui-
 .kpis .kh { margin: 0 0 8px; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
 .kpis small { color: var(--muted); font-size: 12px; }
 .kpis b { font-family: var(--f-display); font-size: 20px; }
+.pietog { display: inline-flex; border: 1px solid var(--line); border-radius: 99px; padding: 2px; align-self: flex-start; }
+.pietog button { border: 0; background: transparent; color: var(--muted); font-size: 12px; font-weight: 600; padding: 3px 12px; border-radius: 99px; min-height: 26px; }
+.pietog button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
+.piewrap { display: flex; justify-content: center; }
+.piedet { border: 1px solid var(--line); border-left: 4px solid var(--cc); border-radius: 12px; padding: 8px 12px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.piedet .ph { display: flex; align-items: center; gap: 8px; }
+.piedet .ph .tnum { margin-left: auto; }
+.piedet .pd { display: flex; justify-content: space-between; font-size: 12px; }
 .cat { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; }
 .cat .bar { grid-column: 1 / -1; height: 6px; background: var(--line); }
 .cat .bar > i { background: var(--cc, var(--accent)); }
@@ -368,6 +383,7 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
 
   <!-- ENTRIES -->
   <div data-tab-panel="entries">
+    <div id="bkbanner" class="notice warn" hidden style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap"><span id="bkbt" style="flex:1 1 0;min-width:0;font-size:13px"></span><button type="button" class="btn" data-act="bk-go">Back up now</button><button type="button" class="btn ghost" data-act="bk-later">Later</button></div>
     <div class="monthnote" id="monthnote" hidden><span id="monthnotetxt"></span><button type="button" class="pill2" data-act="thismonth">This month</button></div>
     <section class="sum fold" aria-live="polite">
       <div class="sumline">
@@ -483,6 +499,10 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
       <section class="panel">
         <h2>Income by category</h2>
         <div id="yicats" style="display:flex;flex-direction:column;gap:14px"></div>
+      </section>
+      <section class="panel" id="yvpanel" hidden>
+        <h2>Invested by category</h2>
+        <div id="yvcats" style="display:flex;flex-direction:column;gap:14px"></div>
       </section>
     </div>
     <div id="monthview">
@@ -636,20 +656,20 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
       <div class="inline"><input id="newiplat" type="text" maxlength="20" placeholder="New platform, e.g. Zerodha" aria-label="New platform name"><button class="btn" data-act="addplat" data-k="i" type="button">Add</button></div>
     </section>
     <section class="panel">
-      <h2>Backup</h2>
-      <div class="muted">Your data lives only on this device. Send yourself a copy so you can restore it later.</div>
+      <h2>Backup and restore</h2>
+      <div class="muted">Your data lives only on this device. Save a backup file so you can restore it later.</div>
       <label for="bkpw" class="muted">Passphrase (optional)</label>
       <input id="bkpw" type="text" maxlength="40" autocomplete="off" placeholder="Lock the backup with a passphrase" aria-label="Backup passphrase" style="-webkit-text-security: disc">
-      <div class="fine">Without a passphrase the backup text is only scrambled, so it is unreadable at a glance but not secure. With one, it is properly encrypted and can only be restored with the same passphrase. If you forget it, that backup cannot be recovered.</div>
+      <div class="fine">Without a passphrase the backup is only scrambled, so it is unreadable at a glance but not secure. With one, it is properly encrypted and can only be restored with the same passphrase. If you forget it, that backup cannot be recovered.</div>
       <div class="btns">
-        <a class="btn" id="wa" href="https://wa.me/" target="_blank" rel="noopener">Send to WhatsApp</a>
-        <button class="btn ghost" type="button" data-act="copy">Copy backup text</button>
+        <button class="btn" type="button" data-act="bksave">Backup</button>
+        <button class="btn ghost" type="button" data-act="bkpick">Restore</button>
       </div>
+      <div class="fine" id="lastbk"></div>
       <div class="err" id="copymsg" style="color:var(--good)"></div>
-      <label for="bk" class="muted">Backup text (paste a backup here to restore)</label>
-      <textarea id="bk" spellcheck="false"></textarea>
-      <button class="btn ghost" type="button" data-act="restore">Restore from this text</button>
       <div class="err" id="restoremsg"></div>
+      <textarea id="bk" hidden></textarea>
+      <input type="file" id="bkfile" accept=".txt,.spendbook,text/plain" hidden>
     </section>
     <section class="panel">
       <h2>Data</h2>
@@ -690,7 +710,7 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
       investment: [cat('Stocks'), cat('Mutual funds', ['SIP', 'Lump sum']), cat('Gold'), cat('Fixed deposit'), cat('Crypto'), cat('Other')]
     }
   };
-  var ui = { incNB: true, statView: 'month', year: new Date().getFullYear(), yMon: null, yCat: '', auDay: 1, au: { id: null, type: 'expense', acct: '', cat: '', sub: '', plat: '' }, auOpen: false, auDel: null, repayFor: null, rp: { cat: '', acct: '' }, rpErr: '', tagFor: null, tags: [], fTag: '', tagRen: null, tagDel: null, tagErr: '', invEd: null, delQ: null, plat: '', platDel: null, platRen: null, platK: '', platErr: '', quickEdit: false, qNaming: false, qErr: '', fAcct: '', budgetOnly: false, renCat: null, renSub: null, renErr: '', renVal: null, sumOpen: false, renameAcct: null, delX: null, tab: 'entries', month: '', type: 'expense', sel: '', sub: '', acct: '', editing: null, adding: null, openCat: {}, setOpen: {}, delCat: null, delSub: null, open: null, confirmDel: null, dupFor: null, confirmClear: false, ctype: 'expense', balEdit: null, acctDel: null };
+  var ui = { confirmSample: false, confirmDummyDel: false, pie: (function () { try { return !!localStorage.getItem('spendbook.pie'); } catch (er) { return false; } })(), incNB: true, statView: 'month', year: new Date().getFullYear(), yMon: null, yCat: '', auDay: 1, au: { id: null, type: 'expense', acct: '', cat: '', sub: '', plat: '' }, auOpen: false, auDel: null, repayFor: null, rp: { cat: '', acct: '' }, rpErr: '', tagFor: null, tags: [], fTag: '', tagRen: null, tagDel: null, tagErr: '', invEd: null, delQ: null, plat: '', platDel: null, platRen: null, platK: '', platErr: '', quickEdit: false, qNaming: false, qErr: '', fAcct: '', budgetOnly: false, renCat: null, renSub: null, renErr: '', renVal: null, sumOpen: false, renameAcct: null, delX: null, tab: 'entries', month: '', type: 'expense', sel: '', sub: '', acct: '', editing: null, adding: null, openCat: {}, setOpen: {}, delCat: null, delSub: null, open: null, confirmDel: null, dupFor: null, confirmClear: false, ctype: 'expense', balEdit: null, acctDel: null };
   var $ = function (id) { return document.getElementById(id); };
 
   function pad(n) { return (n < 10 ? '0' : '') + n; }
@@ -1130,7 +1150,7 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
       var hasAny = S.tx.length > 0;
       el.innerHTML = '<div class="empty"><b>' + (hasAny ? 'Nothing recorded this month' : 'No entries yet') + '</b><span>' +
         (hasAny ? 'Income and expenses you add for this month will show up here.' : 'Add your first expense or income above, or load a few examples to see how it looks.') + '</span>' +
-        (hasAny ? '' : '<button class="btn ghost" data-act="sample">Load example entries</button>') + '</div>';
+        (hasAny ? '' : '<button class="btn ghost" data-act="sample">Load dummy data</button>' + (ui.confirmSample ? cbar('Add dummy entries to your data?', 'sample-yes', 'sample-no') : '')) + '</div>';
       return;
     }
     var groups = {}, order = [];
@@ -1256,7 +1276,35 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
       if (e.sub) { subs[e.cat] = subs[e.cat] || {}; subs[e.cat][e.sub] = (subs[e.cat][e.sub] || 0) + ea; }
     });
     var keys = Object.keys(by).sort(function (a, b) { return by[b] - by[a]; });
-    $(targetId).innerHTML = keys.length ? keys.map(function (k) {
+    var pieH = '';
+    if (type === 'expense' && keys.length) {
+      pieH = '<div class="pietog" role="group" aria-label="View"><button type="button" data-act="pieview" data-v="list" aria-pressed="' + !ui.pie + '">List</button><button type="button" data-act="pieview" data-v="pie" aria-pressed="' + !!ui.pie + '">Pie</button></div>';
+      if (ui.pie && total > 0) {
+        var R = 70, r0 = 42, cx = 80, cy = 80, ang = -Math.PI / 2, sl = '', lb = '', ps = ui.pieSel && by[ui.pieSel] ? ui.pieSel : '', pn = {};
+        rows.forEach(function (e) { pn[e.cat] = (pn[e.cat] || 0) + 1; });
+        function pt(rr, an) { return [cx + rr * Math.cos(an), cy + rr * Math.sin(an)]; }
+        keys.forEach(function (k) {
+          var f = by[k] / total, a2 = ang + f * 2 * Math.PI, lg = f > 0.5 ? 1 : 0, dim = ps && ps !== k ? ' opacity="0.35"' : '';
+          var op = ps === k ? 4 : 0, Ro = R + op, p1 = pt(Ro, ang), p2 = pt(Ro, a2), p3 = pt(r0, a2), p4 = pt(r0, ang), d;
+          if (keys.length === 1) { p2 = pt(Ro, ang + 6.2831); d = 'M' + p1[0].toFixed(2) + ' ' + p1[1].toFixed(2) + 'A' + Ro + ' ' + Ro + ' 0 1 1 ' + (cx - Ro) + ' ' + cy + 'A' + Ro + ' ' + Ro + ' 0 1 1 ' + p1[0].toFixed(2) + ' ' + p1[1].toFixed(2) + 'Z'; }
+          else d = 'M' + p1[0].toFixed(2) + ' ' + p1[1].toFixed(2) + 'A' + Ro + ' ' + Ro + ' 0 ' + lg + ' 1 ' + p2[0].toFixed(2) + ' ' + p2[1].toFixed(2) + 'L' + p3[0].toFixed(2) + ' ' + p3[1].toFixed(2) + 'A' + r0 + ' ' + r0 + ' 0 ' + lg + ' 0 ' + p4[0].toFixed(2) + ' ' + p4[1].toFixed(2) + 'Z';
+          sl += '<path data-act="pieslice" data-k="' + esc(k) + '" d="' + d + '" fill="' + catColor(type, k) + '" stroke="var(--bg)" stroke-width="2"' + dim + ' style="cursor:pointer"><title>' + esc(k) + ' ' + money(by[k]) + ' · ' + (f * 100).toFixed(0) + '%</title></path>';
+          if (f >= 0.07 && keys.length > 1) { var m = pt((R + r0) / 2, ang + (a2 - ang) / 2); lb += '<text x="' + m[0].toFixed(1) + '" y="' + (m[1] + 3).toFixed(1) + '" text-anchor="middle" font-size="9" font-weight="700" fill="#fff" pointer-events="none"' + dim + '>' + (f * 100).toFixed(0) + '%</text>'; }
+          ang = a2;
+        });
+        var ctr = ps ? '<text x="80" y="74" text-anchor="middle" font-size="9" fill="var(--muted)" pointer-events="none">' + esc(ps.length > 14 ? ps.slice(0, 13) + '\u2026' : ps) + '</text><text x="80" y="90" text-anchor="middle" font-size="12" font-weight="700" fill="var(--fg)" pointer-events="none">' + money(by[ps]) + '</text>'
+          : '<text x="80" y="74" text-anchor="middle" font-size="9" fill="var(--muted)" pointer-events="none">Total</text><text x="80" y="90" text-anchor="middle" font-size="12" font-weight="700" fill="var(--fg)" pointer-events="none">' + money(total) + '</text>';
+        pieH += '<div class="piewrap"><svg viewBox="0 0 160 160" width="190" height="190" role="img" aria-label="Spending by category">' + sl + lb + ctr + '</svg></div>';
+        if (ps) {
+          var sm0 = subs[ps] || {}, sk0 = Object.keys(sm0).sort(function (a, b) { return sm0[b] - sm0[a]; }).slice(0, 3), n0 = pn[ps] || 0;
+          pieH += '<div class="piedet" style="--cc:' + catColor(type, ps) + '"><div class="ph"><span class="dot" style="background:' + catColor(type, ps) + '"></span><b>' + esc(ps) + '</b><span class="tnum">' + money(by[ps]) + ' <span class="muted">' + (by[ps] / total * 100).toFixed(1) + '%</span></span></div>' +
+            '<div class="muted" style="font-size:12px">' + n0 + (n0 === 1 ? ' entry' : ' entries') + ' · average ' + money(r2(by[ps] / Math.max(1, n0))) + '</div>' +
+            sk0.map(function (x) { return '<div class="pd"><span>' + esc(x) + '</span><span class="tnum">' + money(sm0[x]) + ' <span class="muted">' + (by[ps] ? (sm0[x] / by[ps] * 100).toFixed(0) : 0) + '%</span></span></div>'; }).join('') + '</div>';
+        } else pieH += '<div class="fine" style="text-align:center">Tap a slice for details.</div>';
+      }
+    }
+    if (type === 'expense' && ui.pie && total > 0) { $(targetId).innerHTML = pieH; return; }
+    $(targetId).innerHTML = pieH + (keys.length ? keys.map(function (k) {
       var c = clist(type)[cidx(type, k)], bud = type === 'expense' && c && c.budget > 0 && !c.nb ? c.budget : 0;
       var pc = total ? by[k] / total * 100 : 0, bused = cnt[k] || 0, bpc = bud ? Math.min(100, bused / bud * 100) : 0;
       var key = (pre || '') + type + '|' + k, open = !!ui.openCat[key], cc = catColor(type, k);
@@ -1277,7 +1325,7 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
       var skippedC = bud ? r2(by[k] - (cnt[k] || 0)) : 0;
       var note = (type === 'expense' && c && c.nb) ? '<div class="muted" style="font-size:12px;margin-top:4px">Not counted toward budget</div>' : skippedC > 0 ? '<div class="muted" style="font-size:12px;margin-top:4px">+' + money(skippedC) + ' not counted toward budget</div>' : '';
       return '<div>' + head + note + body + '</div>';
-    }).join('') : '<div class="muted">Nothing recorded in this month yet.</div>';
+    }).join('') : '<div class="muted">Nothing recorded in this month yet.</div>');
   }
   function renderYear() {
     var y = ui.year, ys = String(y), MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], ML = 'JFMAMJJASOND';
@@ -1334,7 +1382,7 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
     var lbl = ui.yCat || 'All spending';
     var dB = ui.yMon === null ? '<span class="muted">Dashed line is the monthly average (' + money(r2(av)) + '). Tap a month for its number.</span>' : '<b>' + MN[ui.yMon] + '</b>  ' + esc(lbl) + ' <b class="tnum">' + money(r2(cs[ui.yMon])) + '</b>' + (ui.yMon < shown && av > 0 ? ' \u00B7 ' + (cs[ui.yMon] >= av ? Math.round((cs[ui.yMon] / av - 1) * 100) + '% above' : Math.round((1 - cs[ui.yMon] / av) * 100) + '% below') + ' average' : '');
     $('ychartB').innerHTML = (tot > 0 ? b : '<div class="muted" style="margin-top:8px">No spending in ' + esc(lbl) + ' for ' + y + '.</div>') + (nbx.length && !ui.yCat ? '<div class="fine">Not-in-budget categories are left out.</div>' : '') + '<div style="margin-top:8px;font-size:13px">' + (tot > 0 ? dB : '') + '</div>';
-    renderNB(items, 'nbpanelY'); breakdown('expense', nbFilter(items), 'ycats', 'y'); breakdown('income', items, 'yicats', 'y');
+    renderNB(items, 'nbpanelY'); breakdown('expense', nbFilter(items), 'ycats', 'y'); breakdown('income', items, 'yicats', 'y'); breakdown('investment', items, 'yvcats', 'y'); $('yvpanel').hidden = !items.some(function (e) { return e.type === 'investment'; });
   }
   function renderStats() {
     $('statseg').children[0].setAttribute('aria-pressed', String(ui.statView !== 'year')); $('statseg').children[1].setAttribute('aria-pressed', String(ui.statView === 'year'));
@@ -1542,14 +1590,6 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
       return Promise.resolve(JSON.parse(tx.slice(tx.indexOf('{'))));
     } catch (er) { return Promise.reject(er); }
   }
-  function refreshBackup() {
-    var my = ++bkSeq;
-    backupPromise().then(function (bt) {
-      if (my !== bkSeq) return;
-      var box = $('bk'); if (document.activeElement !== box && (box.value === '' || box.value === bkGen)) box.value = bt;
-      bkGen = bt; $('wa').href = 'https://wa.me/?text=' + encodeURIComponent(bt);
-    }, function () { if (my === bkSeq) $('copymsg').textContent = ''; });
-  }
   function renderSettings() {
     var PP_UNUSED = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
     ['', 'i', 'n'].forEach(function (k) {
@@ -1600,13 +1640,11 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
       }
       return '<div class="catitem">' + row + ask + panel + '</div>';
     }).join('');
-    refreshBackup();
-    $('datactl').innerHTML = ui.confirmClear
-      ? '<div style="flex:1 1 100%">' + cbar('Delete every entry and account on this device?', 'clear-yes', 'clear-no') + '</div>'
-      : '<button class="btn ghost" data-act="sample">Load example entries</button><button class="btn ghost" data-act="clear">Delete all entries and accounts</button>';
+    var cf = function (txt, y, n) { return '<div style="flex:1 1 100%">' + cbar(txt, y, n) + '</div>'; };
+    $('datactl').innerHTML = '<button class="btn ghost" data-act="sample">Load dummy data</button>' + (ui.confirmSample ? cf('Add dummy entries to your data?', 'sample-yes', 'sample-no') : '') +
+      '<button class="btn ghost" data-act="dummy-del">Delete dummy data</button>' + (ui.confirmDummyDel ? cf('Delete the dummy entries? Your own entries stay.', 'dummy-del-yes', 'dummy-del-no') : '') +
+      '<button class="btn ghost" data-act="clear">Delete all data</button>' + (ui.confirmClear ? cf('Delete all entries, accounts and autopays on this device?', 'clear-yes', 'clear-no') : '');
   }
-  $('bkpw').addEventListener('input', function () { refreshBackup(); });
-  $('bkpw').addEventListener('change', function () { refreshBackup(); });
   $('budget').addEventListener('change', function () {
     var nv = Math.max(0, parseFloat($('budget').value) || 0);
     var big = nv > 0 ? clist('expense').filter(function (c) { return c.budget > nv; })[0] : null;
@@ -1621,6 +1659,7 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
     if (t.dataset && t.dataset.catbudget !== undefined) { var c = clist('expense')[+t.dataset.catbudget]; if (c) { var nbv = Math.max(0, parseFloat(t.value) || 0); if (S.budget > 0 && nbv > S.budget) { t.value = c.budget || ''; showToast('Category budget cannot be more than the overall budget (' + money(S.budget) + ')'); return; } c.budget = nbv; save(); renderHead(); renderLeft(); var cn = t.closest('.catitem') && t.closest('.catitem').querySelector('.cname .cnt'); if (cn) { cn.className = 'cnt' + (c.budget > 0 ? ' tnum' : ''); cn.textContent = c.budget > 0 ? money(c.budget) + '/mo' : 'No budget'; } } }
   });
 
+  function isDummy(e) { return /\(example\)$/.test(e.note || ''); }
   function addSamples() {
     var t = new Date(), s = [
       ['expense', 0, 'Food', 'Dining out', 'Lunch', 180], ['expense', 0, 'Transport', 'Cab', 'Ride to office', 90], ['expense', 1, 'Food', 'Groceries', 'Weekly groceries', 640],
@@ -1634,6 +1673,7 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
     ui.month = today().slice(0, 7); save(); renderAll();
   }
 
+  function scrollConf(sel) { setTimeout(function () { var el = document.querySelector(sel); if (el && el.scrollIntoView) { try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (er) { el.scrollIntoView(); } } }, 30); }
   /* ---------- events ---------- */
   document.addEventListener('click', function (ev) {
     var t = ev.target.closest('[data-act],[data-tab]');
@@ -1641,6 +1681,8 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
     if (t.dataset.tab) { ui.tab = t.dataset.tab; renderTabs(); renderAll(); window.scrollTo(0, 0); if (window.SBNav) window.SBNav(ui.tab); return; }
     var a = t.dataset.act, id = t.dataset.id ? Number(t.dataset.id) : null, ix = t.dataset.i !== undefined ? Number(t.dataset.i) : null;
     if (a === 'thismonth') { ui.month = today().slice(0, 7); ui.open = null; ui.confirmDel = null; renderAll(); return; }
+    if (a === 'pieslice') { var pk = t.getAttribute('data-k'); ui.pieSel = ui.pieSel === pk ? '' : pk; renderStats(); return; }
+    if (a === 'pieview') { ui.pie = t.dataset.v === 'pie'; try { localStorage.setItem('spendbook.pie', ui.pie ? '1' : ''); } catch (er) {} renderStats(); return; }
     if (a === 'statview') { ui.statView = t.dataset.v; ui.yMon = null; renderStats(); return; }
     if (a === 'ymon') { var yi = Number(t.dataset.i); ui.yMon = ui.yMon === yi ? null : yi; renderYear(); return; }
     if ((a === 'prev' || a === 'next') && ui.tab === 'stats' && ui.statView === 'year') { ui.year += a === 'next' ? 1 : -1; ui.yMon = null; renderStats(); return; }
@@ -1715,7 +1757,7 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
     else if (a === 'pfo-cancel') { ui.pfoAdding = false; renderPFO(); }
     else if (a === 'pick') { ui.sel = t.dataset.v; ui.sub = ''; renderChips(); }
     else if (a === 'picksub') { ui.sub = ui.sub === t.dataset.v ? '' : t.dataset.v; renderChips(); }
-    else if (a === 'toggle') { ui.open = ui.open === id ? null : id; ui.confirmDel = null; ui.dupFor = null; ui.tagFor = null; renderList(); }
+    else if (a === 'toggle') { ui.open = ui.tagFor === id ? null : ui.open === id ? null : id; ui.confirmDel = null; ui.dupFor = null; ui.tagFor = null; renderList(); }
     else if (a === 'etag') {
       var te = S.tx.filter(function (x) { return x.id === id; })[0], tv2 = t.dataset.v;
       if (te) { var tl2 = (te.tags || []).slice(), ix2 = tl2.indexOf(tv2); if (ix2 >= 0) tl2.splice(ix2, 1); else tl2.push(tv2); if (tl2.length) te.tags = tl2; else delete te.tags; save(); renderList(); if (ui.tab === 'stats') renderStats(); }
@@ -1752,8 +1794,19 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
       if (del) adjust(del, -1);
       S.tx = S.tx.filter(function (x) { return x.id !== ui.confirmDel; }); ui.confirmDel = null; ui.open = null; save(); renderAll();
     }
-    else if (a === 'sample') { addSamples(); }
-    else if (a === 'clear') { ui.confirmClear = true; renderSettings(); }
+    else if (a === 'sample') { ui.confirmSample = true; ui.confirmClear = false; ui.confirmDummyDel = false; renderSettings(); renderList(); scrollConf(ui.tab === 'settings' ? '#datactl .cbar' : '#list .empty .cbar'); }
+    else if (a === 'sample-no') { ui.confirmSample = false; renderSettings(); renderList(); }
+    else if (a === 'sample-yes') { ui.confirmSample = false; addSamples(); }
+    else if (a === 'clear') { ui.confirmClear = true; ui.confirmSample = false; ui.confirmDummyDel = false; renderSettings(); scrollConf('#datactl .cbar'); }
+    else if (a === 'dummy-del') {
+      if (!S.tx.some(isDummy)) { ui.confirmDummyDel = false; renderSettings(); showToast('No dummy data found.'); return; }
+      ui.confirmDummyDel = true; ui.confirmSample = false; ui.confirmClear = false; renderSettings(); scrollConf('#datactl .cbar');
+    }
+    else if (a === 'dummy-del-no') { ui.confirmDummyDel = false; renderSettings(); }
+    else if (a === 'dummy-del-yes') {
+      S.tx.filter(isDummy).forEach(function (x) { adjust(x, -1); });
+      S.tx = S.tx.filter(function (x) { return !isDummy(x); }); ui.confirmDummyDel = false; ui.open = null; save(); renderAll();
+    }
     else if (a === 'clear-no') { ui.confirmClear = false; renderSettings(); }
     else if (a === 'clear-yes') { S.invAdjC = {}; S.invAdjPC = {}; S.tx = []; S.accts = []; S.xf = []; S.auto = []; ui.confirmClear = false; save(); resetForm(); renderAll(); }
     else if (a === 'ctype') { ui.ctype = t.dataset.v; ui.delCat = null; ui.delSub = null; ui.renCat = null; ui.renSub = null; ui.renErr = ''; renderSettings(); }
@@ -1827,7 +1880,7 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
     else if (a === 'rensub') { ui.renSub = { i: ix, s: t.dataset.v }; ui.renCat = null; ui.renErr = ''; ui.renVal = null; ui.delCat = null; ui.delSub = null; renderSettings(); var rs = $('rensub'); if (rs) { rs.focus(); rs.select(); } }
     else if (a === 'rensub-no') { ui.renSub = null; ui.renErr = ''; ui.renVal = null; renderSettings(); }
     else if (a === 'rensub-save') { renameSub(ix, t.dataset.v); }
-    else if (a === 'rmcat') { ui.delCat = ix; ui.delSub = null; renderSettings(); }
+    else if (a === 'rmcat') { ui.delCat = ui.delCat === ix ? null : ix; ui.delSub = null; renderSettings(); }
     else if (a === 'rmcat-no') { ui.delCat = null; renderSettings(); }
     else if (a === 'rmcat-yes') {
       if (clist(ui.ctype).length > 1 && ui.delCat !== null && !(ui.ctype === 'expense' && clist('expense')[ui.delCat] && clist('expense')[ui.delCat].n === pfoN())) { clist(ui.ctype).splice(ui.delCat, 1); }
@@ -1835,7 +1888,7 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
     } else if (a === 'addsub') {
       var inp = document.querySelector('[data-subin="' + ix + '"]'), sv = inp ? inp.value.trim() : '', c = clist(ui.ctype)[ix];
       if (c && sv && c.subs.indexOf(sv) < 0) { c.subs.push(sv); save(); renderChips(); renderSettings(); }
-    } else if (a === 'rmsub') { ui.delSub = { i: ix, s: t.dataset.v }; ui.delCat = null; renderSettings(); }
+    } else if (a === 'rmsub') { ui.delSub = ui.delSub && ui.delSub.i === ix && ui.delSub.s === t.dataset.v ? null : { i: ix, s: t.dataset.v }; ui.delCat = null; renderSettings(); }
     else if (a === 'rmsub-no') { ui.delSub = null; renderSettings(); }
     else if (a === 'rmsub-yes') {
       var c2 = ui.delSub ? clist(ui.ctype)[ui.delSub.i] : null;
@@ -1865,19 +1918,12 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
       S.accts = S.accts.filter(function (x) { return x.id !== id; }); S.auto = S.auto.filter(function (r) { return r.acct !== id; });
       S.tx.forEach(function (x) { if (x.acct === id) x.acct = null; });
       ui.acctDel = null; save(); renderAll();
-    } else if (a === 'copy') {
-      var done = function () { $('copymsg').textContent = 'Backup text copied.'; };
-      var fail = function () { $('bk').focus(); $('bk').select(); $('copymsg').textContent = 'Select the text below and copy it.'; };
-      backupPromise().then(function (txt) {
-        $('bk').value = txt; bkGen = txt;
-        try { navigator.clipboard.writeText(txt).then(done, fail); } catch (er) { fail(); }
-      }, function () { $('copymsg').textContent = 'Could not create the backup on this device.'; });
-    } else if (a === 'restore') {
-      var raw = $('bk').value, msg = $('restoremsg');
-      readBackup(raw).then(function (o) { restoreFrom(o, msg); }, function (er) {
-        msg.style.color = 'var(--warn)';
-        msg.textContent = er && er.message === 'needpw' ? 'This backup is locked. Enter its passphrase above, then restore.' : er && er.message === 'badpw' ? 'Wrong passphrase, or the backup text is damaged.' : 'That text is not a Spendbook backup. Paste the full message you sent yourself.';
-      });
+    } else if (a === 'restore') { doRestore();
+    } else if (a === 'bkpick') { $('bkfile').click();
+    } else if (a === 'bksave') {
+      backupPromise().then(function (txt) { bkDownload(txt, $('copymsg')); }, function () { $('copymsg').style.color = 'var(--warn)'; $('copymsg').textContent = 'Could not create the backup on this device.'; });
+    } else if (a === 'bk-go') { var stab = document.querySelector('[data-tab="settings"]'); if (stab) stab.click(); window.scrollTo({ top: 0 });
+    } else if (a === 'bk-later') { try { localStorage.setItem('spendbook.bklater', String(Date.now())); } catch (er) {} renderBk();
     }
   });
   /* ---------- Excel export ---------- */
@@ -1964,6 +2010,57 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
   }
   $('xlsx').addEventListener('click', exportXlsx);
 
+  try { if (localStorage.getItem('spendbook.demo20')) { var lbk = +localStorage.getItem('spendbook.lastbk') || 0; if (lbk && Date.now() - lbk > 15 * 86400000) localStorage.removeItem('spendbook.lastbk'); localStorage.removeItem('spendbook.demo20'); } } catch (er) {}
+  function bkStamp() { try { localStorage.setItem('spendbook.lastbk', String(Date.now())); localStorage.removeItem('spendbook.bklater'); } catch (er) {} renderBk(); }
+  function bkDays() { var t = 0; try { t = +localStorage.getItem('spendbook.lastbk') || 0; } catch (er) {} return t ? Math.floor((Date.now() - t) / 86400000) : null; }
+  function renderBk() {
+    var d = bkDays(), lb = $('lastbk'), bn = $('bkbanner'); if (!lb || !bn) return;
+    lb.textContent = d === null ? 'No backup made on this device yet.' : 'Last backup: ' + (d === 0 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago') + '.';
+    var later = 0; try { later = +localStorage.getItem('spendbook.bklater') || 0; } catch (er) {}
+    var first = 0; try { first = +localStorage.getItem('spendbook.bkstart') || 0; if (!first && S.tx.length > 0) { first = Date.now(); localStorage.setItem('spendbook.bkstart', String(first)); } } catch (er) {}
+    var age = first ? Math.floor((Date.now() - first) / 86400000) : 0;
+    var due = S.tx.length > 0 && (d === null ? age >= 7 : d >= 14) && Date.now() - later > 3 * 86400000;
+    bn.hidden = !due; if (due) $('bkbt').textContent = d === null ? 'You have not backed up yet. Your data lives only on this device.' : 'Last backup was ' + d + ' days ago.';
+  }
+  function bkDownload(txt, msgEl) {
+    var fname = 'Spendbook-backup-' + new Date().toISOString().slice(0, 10) + '.txt', blob = new Blob([txt], { type: 'text/plain' });
+    function ok() { msgEl.style.color = 'var(--good)'; msgEl.textContent = 'Backup file saved: ' + fname; bkStamp(); }
+    function plain() {
+      var url = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = url; a.download = fname; document.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 4000); ok();
+    }
+    function viaDownloads() {
+    var cl = window.claude && typeof window.claude.use === 'function' ? window.claude.use('downloads') : null;
+    if (!cl) { plain(); return; }
+    cl.then(function (dl) {
+      if (!dl) { plain(); return; }
+      dl.save({ filename: fname, data: blob }).then(ok, function (er) { msgEl.style.color = 'var(--warn)'; msgEl.textContent = er && er.code === 'declined' ? 'Save cancelled.' : 'Could not save the file here.'; });
+    }, plain);
+    }
+    var file = null;
+    try { file = new File([txt], fname, { type: 'text/plain' }); } catch (er) {}
+    if (file && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: 'Spendbook backup' }).then(ok, function (er) {
+        if (er && er.name === 'AbortError') { msgEl.style.color = 'var(--warn)'; msgEl.textContent = 'Save cancelled.'; } else viaDownloads();
+      });
+    } else viaDownloads();
+  }
+  function doRestore() {
+    var raw = $('bk').value, msg = $('restoremsg');
+    readBackup(raw).then(function (o) { restoreFrom(o, msg); }, function (er) {
+      msg.style.color = 'var(--warn)';
+      msg.textContent = er && er.message === 'needpw' ? 'This backup is locked. Enter its passphrase above, then restore.' : er && er.message === 'badpw' ? 'Wrong passphrase, or the backup text is damaged.' : 'That is not a Spendbook backup.';
+    });
+  }
+  document.addEventListener('change', function (ev) {
+    if (ev.target.id !== 'bkfile') return;
+    var f = ev.target.files && ev.target.files[0]; ev.target.value = ''; if (!f) return;
+    var fr = new FileReader();
+    fr.onload = function () { $('bk').value = String(fr.result || ''); bkGen = ''; doRestore(); };
+    fr.onerror = function () { $('restoremsg').style.color = 'var(--warn)'; $('restoremsg').textContent = 'Could not read that file.'; };
+    fr.readAsText(f);
+  });
   function restoreFrom(o, msg) {
       try {
         var inTx = Array.isArray(o.tx) ? o.tx : (Array.isArray(o.exp) ? o.exp : null); if (!inTx) throw 0;
@@ -2319,6 +2416,7 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
   window.SBClosePad = function () { vkClose(); };
   window.SB = { getTab: function () { return ui.tab; }, setTab: function (n) { ui.tab = n; renderTabs(); renderAll(); window.scrollTo(0, 0); } };
   function renderAll() {
+    renderBk();
     renderHead(); renderList(); renderQuick(); renderAcctSelect(); renderTagChips(); renderLeft();
     if (ui.tab === 'stats') renderStats();
     if (ui.tab === 'accounts') { renderAccounts(); renderXfer(); renderAuto(); }
