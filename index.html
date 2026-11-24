@@ -140,7 +140,15 @@ button { cursor: pointer; }
 .tagchips { display: flex; flex-wrap: wrap; gap: 6px; }
 .tagc { border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; min-height: 34px; font: inherit; font-size: 13px; background: transparent; color: var(--fg); cursor: pointer; }
 .tagc[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 600; }
-.tagpick { flex-direction: column; align-items: stretch; gap: 8px; }
+.tagpick { flex-direction: column; align-items: stretch; gap: 4px; padding-top: 0; padding-bottom: 8px; }
+.tagpick .tphead { width: 100%; display: flex; align-items: center; justify-content: space-between; }
+.tagpick .tphead .tpx { border: 0; background: transparent; color: var(--muted); font-size: 16px; line-height: 1; min-width: 32px; min-height: 28px; padding: 0; cursor: pointer; }
+.tagpick .tagc { min-height: 28px; padding: 3px 10px; }
+.tagpick .tagchips { width: 100%; gap: 6px 4px; justify-content: flex-start; text-align: left; }
+.tagpick .tphead .flabel { text-align: left; }
+.tagpick .inline { width: 100%; gap: 4px; margin-top: 6px; }
+.tagpick .inline input { min-height: 32px; padding: 4px 10px; font-size: 14px; }
+.tagpick .inline .btn { min-height: 32px; padding: 2px 12px; font-size: 13px; }
 .tagc.add { border-style: dashed; color: var(--muted); }
 .sbar { display: flex; gap: 8px; margin-top: 10px; }
 .sbar input { flex: 1; min-width: 0; }
@@ -413,6 +421,9 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
 .xi .a { font-family: var(--f-display); font-weight: 700; }
 .xi.ask { grid-template-columns: 1fr; }
 .wheelw { position: relative; width: 100%; }
+.dgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.dgrid button { min-height: 38px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--fg); font-size: 15px; padding: 0; }
+.dgrid button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 700; }
 .wheel { height: 42px; overflow-y: auto; scroll-snap-type: y mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; box-shadow: inset 0 0 0 1px var(--line); border-radius: 12px; background: var(--bg); overscroll-behavior: contain; }
 .wheel::-webkit-scrollbar { display: none; }
 .wheel .wi { height: 42px; scroll-snap-align: start; scroll-snap-stop: always; display: grid; place-items: center; color: var(--muted); font-size: 17px; cursor: pointer; }
@@ -689,12 +700,13 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
       <div class="muted" id="autohint">Entries that are added automatically on a set day every month, from an account you choose.</div>
       <div id="autolist" style="display:flex;flex-direction:column;gap:8px"></div>
       <div id="autoform" class="xform" hidden>
-        <div class="seg"><button type="button" data-act="au-type" data-v="expense" id="au-t-expense" aria-pressed="true">Expense</button><button type="button" data-act="au-type" data-v="investment" id="au-t-investment" aria-pressed="false">Invest</button></div>
-        <div class="set"><label>Repeats</label><div class="seg s4" id="au-freq"><button type="button" data-act="au-freq" data-v="daily">Daily</button><button type="button" data-act="au-freq" data-v="weekly">Weekly</button><button type="button" data-act="au-freq" data-v="biweekly">Biweekly</button><button type="button" data-act="au-freq" data-v="monthly">Monthly</button></div></div>
+        <div class="seg s3"><button type="button" data-act="au-type" data-v="expense" id="au-t-expense" aria-pressed="true">Expense</button><button type="button" data-act="au-type" data-v="income" id="au-t-income" aria-pressed="false">Income</button><button type="button" data-act="au-type" data-v="investment" id="au-t-investment" aria-pressed="false">Invest</button></div>
+        <div class="set"><label>Frequency</label><div class="dd" id="au-freq"></div></div>
         <div class="xrow2" style="align-items:start">
         <div class="set" id="au-acctwrap"><label>Account</label><div class="dd" id="au-acctdd"></div></div>
-        <div class="set" id="au-daywrap"><label id="au-daylbl">Day of month</label><div class="wheelw"><div class="wheel" id="au-wheel" role="listbox" aria-labelledby="au-daylbl" tabindex="0"></div><span class="wch" aria-hidden="true">&#9650;<br>&#9660;</span></div></div>
+        <div class="set" id="au-daywrap"><label id="au-daylbl">Day of month</label><div class="dd right" id="au-days"></div></div>
         </div>
+        <div class="fine" id="au-daynote" style="font-size:10px;color:var(--muted)">In months with fewer days it runs on the last day.</div>
         <div class="set" id="au-wdwrap" hidden><label id="au-wdlbl">On</label><div class="atypes" id="au-wdchips"></div></div>
         <div class="xrow2">
           <div class="set"><label>Category</label><div class="dd" id="au-catdd"></div></div>
@@ -1096,7 +1108,7 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
     }, 'Category');
     var ci = cidx(ui.type, ui.sel), subs = ci >= 0 ? list[ci].subs.slice() : [];
     if (ui.sub && subs.indexOf(ui.sub) < 0) subs.push(ui.sub);
-    ddRender('subdd', [{ v: '', t: 'No subcategory' }].concat(subs.map(function (x) { return { v: x, t: x }; })).concat([{ v: '__new', t: '+ New subcategory\u2026', sp: true }]), ui.sub, function (v) {
+    ddRender('subdd', [{ v: '', t: 'None' }].concat(subs.map(function (x) { return { v: x, t: x }; })).concat([{ v: '__new', t: '+ New subcategory\u2026', sp: true }]), ui.sub, function (v) {
       if (v === '__new') { ui.adding = 'sub'; } else { ui.sub = v; ui.adding = null; }
       renderChips();
     }, 'Subcategory');
@@ -1155,7 +1167,7 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
     ensurePFO();
     var pi = cidx('expense', pfoN()), subs = pi >= 0 ? clist('expense')[pi].subs.slice() : [];
     if (ui.pfoSub && subs.indexOf(ui.pfoSub) < 0) ui.pfoSub = '';
-    ddRender('pfosubdd', [{ v: '', t: 'No subcategory' }].concat(subs.map(function (x) { return { v: x, t: x }; })).concat([{ v: '__new', t: '+ New subcategory\u2026', sp: true }]), ui.pfoSub, function (v) {
+    ddRender('pfosubdd', [{ v: '', t: 'None' }].concat(subs.map(function (x) { return { v: x, t: x }; })).concat([{ v: '__new', t: '+ New subcategory\u2026', sp: true }]), ui.pfoSub, function (v) {
       if (v === '__new') { ui.pfoAdding = true; } else { ui.pfoSub = v; ui.pfoAdding = false; }
       renderPFO();
     }, 'Subcategory for others');
@@ -1266,12 +1278,17 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
       lpT = setTimeout(function () {
         lpT = null; lpFired = true;
         try { if (navigator.vibrate) navigator.vibrate(15); } catch (er) {}
-        ui.tagFor = Number(b.dataset.id); ui.open = null; ui.confirmDel = null; renderList();
+        ui.tagFor = Number(b.dataset.id); ui.tagAt = Date.now(); ui.open = null; ui.confirmDel = null; renderList();
         var pt = $('ptag'); if (pt && pt.scrollIntoView) { try { pt.closest('.tagpick').scrollIntoView({ block: 'nearest' }); } catch (er2) {} }
       }, 500);
     }, true);
     document.addEventListener('pointermove', function (ev) { if (lpT && (Math.abs(ev.clientX - lpX) > 10 || Math.abs(ev.clientY - lpY) > 10)) lpClear(); }, true);
     ['pointerup', 'pointercancel'].forEach(function (n) { document.addEventListener(n, function () { lpClear(); setTimeout(function () { lpFired = false; }, 400); }, true); });
+    document.addEventListener('click', function (ev) {
+      if (ui.tagFor === null || ui.tagFor === undefined || Date.now() - (ui.tagAt || 0) < 600) return;
+      var tg = ev.target; if (!tg || !tg.closest || !tg.isConnected || tg.closest('.tagpick, .item, #kb, #pad, .kb, .pad')) return;
+      ui.tagFor = null; ui.ptagNew = null; renderList();
+    });
     window.addEventListener('click', function (ev) { if (lpFired) { ev.preventDefault(); ev.stopPropagation(); lpFired = false; } }, true);
     document.addEventListener('contextmenu', function (ev) { if (ev.target.closest && ev.target.closest('#list .item')) ev.preventDefault(); });
   })();
@@ -1448,9 +1465,8 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
         }
         if (ui.tagFor === e.id) {
           var has = e.tags || [], tl = S.tags.filter(function (x) { return S.tagsA.indexOf(x) < 0; }); has.forEach(function (x) { if (tl.indexOf(x) < 0) tl.push(x); });
-          h += '<div class="acts tagpick"><span class="flabel">Tags for this entry</span><div class="tagchips">' + (tl.length ? tl.map(function (x) { return '<button type="button" class="tagc" data-act="etag" data-id="' + e.id + '" data-v="' + esc(x) + '" aria-pressed="' + (has.indexOf(x) >= 0) + '">' + esc(x) + '</button>'; }).join('') : '<span class="muted" style="font-size:13px">No tags yet. Add one below.</span>') + '</div>' +
-            '<div class="inline"><input id="ptag" type="text" maxlength="13" placeholder="New tag" aria-label="New tag name"><button type="button" class="btn sm" data-act="ptag-add" data-id="' + e.id + '">Add</button></div>' +
-            '<button type="button" class="btn ghost sm" data-act="ptag-done">Done</button></div>';
+          h += '<div class="acts tagpick"><span class="flabel" style="align-self:flex-start">Tags for this entry</span><div class="tagchips">' + (tl.length ? tl.map(function (x) { return '<button type="button" class="tagc" data-act="etag" data-id="' + e.id + '" data-v="' + esc(x) + '" aria-pressed="' + (has.indexOf(x) >= 0) + '">' + esc(x) + '</button>'; }).join('') : '<span class="muted" style="font-size:13px">No tags yet.</span>') + (ui.ptagNew === e.id ? '<span class="inline" style="flex:1 1 100%"><input id="ptag" type="text" maxlength="13" placeholder="New tag name" aria-label="New tag name"><button type="button" class="btn sm" data-act="ptag-add" data-id="' + e.id + '">Add</button><button type="button" class="btn ghost sm" data-act="ptag-cancel">Cancel</button></span>' : '<button type="button" class="tagc add" data-act="ptag-new" data-id="' + e.id + '">+ New tag</button>') + '</div>' +
+            '</div>';
         }
         return h;
       }).join('');
@@ -1545,7 +1561,7 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
     var cats = clist('expense').filter(function (c) { return c.n !== pfoN(); });
     ddRender('rpcatdd', [{ v: '', t: 'None' }].concat(cats.map(function (c) { return { v: c.n, t: c.n, c: catColor('expense', c.n) }; })), ui.rp.cat, function (v) { ui.rp.cat = v; ui.rp.sub = ''; if (v) ui.rp.acct = ''; renderRepay(); }, 'Repayment category');
     var rci = cidx('expense', ui.rp.cat), rsubs = rci >= 0 ? clist('expense')[rci].subs : [];
-    ddRender('rpsubdd', [{ v: '', t: 'No subcategory' }].concat(rsubs.map(function (x) { return { v: x, t: x }; })), ui.rp.sub, function (v) { ui.rp.sub = v; renderRepay(); }, 'Repayment subcategory');
+    ddRender('rpsubdd', [{ v: '', t: 'None' }].concat(rsubs.map(function (x) { return { v: x, t: x }; })), ui.rp.sub, function (v) { ui.rp.sub = v; renderRepay(); }, 'Repayment subcategory');
     ddRender('rpacctdd', [{ v: '', t: 'None' }].concat(S.accts.map(function (a) { return { v: String(a.id), t: a.name }; })), ui.rp.acct === '' ? '' : String(ui.rp.acct), function (v) { ui.rp.acct = v === '' ? '' : Number(v); if (v) ui.rp.cat = ''; renderRepay(); }, 'Account');
     $('rpcatdd').parentNode.classList.toggle('off', ui.rp.acct !== '');
     $('rpsubdd').parentNode.classList.toggle('off', !ui.rp.cat || ui.rp.acct !== '');
@@ -1620,9 +1636,9 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
         keys.forEach(function (k) {
           var f = by[k] / total, a2 = ang + f * 2 * Math.PI, lg = f > 0.5 ? 1 : 0, dim = ps && ps !== k ? ' opacity="0.35"' : '';
           var op = ps === k ? 4 : 0, Ro = R + op, p1 = pt(Ro, ang), p2 = pt(Ro, a2), p3 = pt(r0, a2), p4 = pt(r0, ang), d;
-          if (keys.length === 1) { p2 = pt(Ro, ang + 6.2831); d = 'M' + p1[0].toFixed(2) + ' ' + p1[1].toFixed(2) + 'A' + Ro + ' ' + Ro + ' 0 1 1 ' + (cx - Ro) + ' ' + cy + 'A' + Ro + ' ' + Ro + ' 0 1 1 ' + p1[0].toFixed(2) + ' ' + p1[1].toFixed(2) + 'Z'; }
+          if (keys.length === 1) { d = 'M' + (cx - Ro) + ' ' + cy + 'A' + Ro + ' ' + Ro + ' 0 1 1 ' + (cx + Ro) + ' ' + cy + 'A' + Ro + ' ' + Ro + ' 0 1 1 ' + (cx - Ro) + ' ' + cy + 'ZM' + (cx - r0) + ' ' + cy + 'A' + r0 + ' ' + r0 + ' 0 1 0 ' + (cx + r0) + ' ' + cy + 'A' + r0 + ' ' + r0 + ' 0 1 0 ' + (cx - r0) + ' ' + cy + 'Z'; }
           else d = 'M' + p1[0].toFixed(2) + ' ' + p1[1].toFixed(2) + 'A' + Ro + ' ' + Ro + ' 0 ' + lg + ' 1 ' + p2[0].toFixed(2) + ' ' + p2[1].toFixed(2) + 'L' + p3[0].toFixed(2) + ' ' + p3[1].toFixed(2) + 'A' + r0 + ' ' + r0 + ' 0 ' + lg + ' 0 ' + p4[0].toFixed(2) + ' ' + p4[1].toFixed(2) + 'Z';
-          sl += '<path data-act="pieslice" data-k="' + esc(k) + '" d="' + d + '" fill="' + catColor(type, k) + '" stroke="var(--bg)" stroke-width="2"' + dim + ' style="cursor:pointer"><title>' + esc(k) + ' ' + money(by[k]) + ' · ' + (f * 100).toFixed(0) + '%</title></path>';
+          sl += '<path data-act="pieslice" data-k="' + esc(k) + '" d="' + d + '" fill="' + catColor(type, k) + '" fill-rule="evenodd" stroke="var(--bg)" stroke-width="2"' + dim + ' style="cursor:pointer"><title>' + esc(k) + ' ' + money(by[k]) + ' · ' + (f * 100).toFixed(0) + '%</title></path>';
           if (f >= 0.07 && keys.length > 1) { var m = pt((R + r0) / 2, ang + (a2 - ang) / 2); lb += '<text x="' + m[0].toFixed(1) + '" y="' + (m[1] + 3).toFixed(1) + '" text-anchor="middle" font-size="9" font-weight="700" fill="#fff" pointer-events="none"' + dim + '>' + (f * 100).toFixed(0) + '%</text>'; }
           ang = a2;
         });
@@ -2152,6 +2168,7 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
     else if (a === 'qadd') { quickAdd(id); }
     else if (a === 'au-new') { auReset(); ui.auOpen = true; renderAuto(); }
     else if (a === 'au-cancel') { ui.auOpen = false; auReset(); renderAuto(); }
+    else if (a === 'au-day') { ui.auDay = Number(t.dataset.v); renderAuto(); }
     else if (a === 'au-freq') { ui.au.freq = t.dataset.v; renderAuto(); }
     else if (a === 'au-wd') { ui.au.wd = Number(t.dataset.v); renderAuto(); }
     else if (a === 'au-type') { var nt = t.dataset.v; if (ui.au.type !== nt) { ui.au.type = nt; ui.au.cat = ''; ui.au.sub = ''; ui.au.plat = ''; } renderAuto(); }
@@ -2231,10 +2248,12 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
       var pe = S.tx.filter(function (x) { return x.id === id; })[0], pv2 = ($('ptag') ? $('ptag').value : '').trim().slice(0, 13);
       if (pe && pv2) {
         var pex = S.tags.filter(function (x) { return x.toLowerCase() === pv2.toLowerCase(); })[0]; if (!pex) { S.tags.push(pv2); pex = pv2; } else unarchTag(pex);
-        var pl2 = (pe.tags || []).slice(); if (pl2.indexOf(pex) < 0) pl2.push(pex); pe.tags = pl2; save(); renderList(); renderFilters();
+        var pl2 = (pe.tags || []).slice(); if (pl2.indexOf(pex) < 0) pl2.push(pex); pe.tags = pl2; ui.ptagNew = null; save(); renderList(); renderFilters();
       }
     }
-    else if (a === 'ptag-done') { ui.tagFor = null; renderList(); }
+    else if (a === 'ptag-new') { ui.ptagNew = id; renderList(); var pf = $('ptag'); if (pf) pf.focus(); }
+    else if (a === 'ptag-cancel') { ui.ptagNew = null; renderList(); }
+    else if (a === 'ptag-done') { ui.tagFor = null; ui.ptagNew = null; renderList(); }
     else if (a === 'edit') {
       var e = S.tx.filter(function (x) { return x.id === id; })[0]; if (!e) return;
       ui.foundFor = null; $('date').removeAttribute('max'); $('foundnote').hidden = true; $('formtitle').textContent = 'Edit entry';
@@ -2751,54 +2770,38 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
     return made;
   }
   function auSuffix(d) { return d + (d % 10 === 1 && d !== 11 ? 'st' : d % 10 === 2 && d !== 12 ? 'nd' : d % 10 === 3 && d !== 13 ? 'rd' : 'th'); }
-  var WN = 7, WH = 42;
-  function wheelDay() { var w = $('au-wheel'); return w ? (Math.round(w.scrollTop / WH) % 31 + 31) % 31 + 1 : 1; }
-  function wheelMark() { return wheelDay(); }
-  (function () {
-    var w = $('au-wheel'), h = '', t = null;
-    for (var c = 0; c < WN; c++) for (var i = 1; i <= 31; i++) h += '<div class="wi" role="option" data-day="' + i + '">' + i + '</div>';
-    w.innerHTML = h;
-    w.addEventListener('scroll', function () {
-      clearTimeout(t);
-      t = setTimeout(function () {
-        var idx = Math.round(w.scrollTop / WH); ui.auDay = wheelDay();
-        if (idx < 31 * 2 || idx >= 31 * (WN - 2)) w.scrollTop = (31 * 3 + ui.auDay - 1) * WH;
-      }, 80);
-    });
-    w.addEventListener('click', function (ev) { var it = ev.target.closest('.wi'); if (it) { var k = [].indexOf.call(w.children, it); ui.auDay = Number(it.dataset.day); w.scrollTo({ top: k * WH, behavior: 'smooth' }); } });
-  })();
-  function wheelSync() { var w = $('au-wheel'); if (!w) return; var want = (31 * 3 + ui.auDay - 1) * WH; if (wheelDay() !== ui.auDay || w.scrollTop < 31 * 2 * WH || w.scrollTop >= 31 * (WN - 2) * WH) w.scrollTop = want; }
+  function daysRender() { var o = []; for (var i = 1; i <= 31; i++) o.push({ v: String(i), t: i === 31 ? 'Last day' : auSuffix(i) }); ddRender('au-days', o, String(ui.auDay), function (v) { ui.auDay = Number(v); renderAuto(); }, 'Day of month'); }
   function auReset() { ui.au = { id: null, type: 'expense', acct: '', cat: '', sub: '', plat: '', freq: 'monthly', wd: new Date().getDay() }; ui.auDay = new Date().getDate(); $('au-amt').value = ''; $('au-note').value = ''; $('au-err').textContent = ''; }
   function renderAuto() {
     if (!$('autolist')) return;
     var has = S.accts.length > 0;
-    $('autohint').textContent = has ? 'Entries that are added automatically on a schedule you set (daily, weekly, every two weeks or monthly), from an account you choose.' : 'Add an account first to set up autopay.';
+    $('autohint').textContent = has ? 'Expenses, income and investments that are added automatically on a schedule you set (daily, weekly, every two weeks or monthly), from an account you choose.' : 'Add an account first to set up autopay.';
     $('au-newbtn').hidden = !has || !!ui.auOpen;
     $('autoform').hidden = !ui.auOpen || !has;
     $('autolist').innerHTML = S.auto.length ? '<div class="card">' + S.auto.map(function (r) {
       if (ui.auDel === r.id) return '<div class="xi ask">' + cbar('Delete this autopay? Entries already added stay.', 'au-del-yes', 'au-del-no', ' data-id="' + r.id + '"') + '</div>';
       var a = acctById(r.acct);
-      return '<div class="xi au"><span class="t"><b>' + esc(r.cat) + (r.sub ? ' › ' + esc(r.sub) : '') + '</b><span>' + (r.type === 'investment' ? 'Invest' : 'Expense') + ' · ' + ruleText(r) + ' · ' + esc(a ? a.name : 'Account removed') + ' · next ' + esc(fmtD(r.next)) + '</span></span><span class="a tnum">' + money(r.amt) + '</span>' + rb('au-edit', ' data-id="' + r.id + '"', 'Edit autopay', 'pen', true) + rb('au-del', ' data-id="' + r.id + '"', 'Delete autopay', 'x', true) + '</div>';
+      return '<div class="xi au"><span class="t"><b>' + esc(r.cat) + (r.sub ? ' › ' + esc(r.sub) : '') + '</b><span>' + (r.type === 'investment' ? 'Invest' : r.type === 'income' ? 'Income' : 'Expense') + ' · ' + ruleText(r) + ' · ' + esc(a ? a.name : 'Account removed') + ' · next ' + esc(fmtD(r.next)) + '</span></span><span class="a tnum">' + money(r.amt) + '</span>' + rb('au-edit', ' data-id="' + r.id + '"', 'Edit autopay', 'pen', true) + rb('au-del', ' data-id="' + r.id + '"', 'Delete autopay', 'x', true) + '</div>';
     }).join('') + '</div>' : '';
     if (!ui.auOpen || !has) return;
     var u = ui.au, list = clist(u.type), fq = u.freq || 'monthly';
-    [].forEach.call($('au-freq').children, function (b) { b.setAttribute('aria-pressed', String(b.dataset.v === fq)); });
-    $('au-daywrap').hidden = fq !== 'monthly'; $('au-acctwrap').style.gridColumn = fq === 'monthly' ? '' : '1 / -1';
+    ddRender('au-freq', [{ v: 'daily', t: 'Daily' }, { v: 'weekly', t: 'Weekly' }, { v: 'biweekly', t: 'Every two weeks' }, { v: 'monthly', t: 'Monthly' }], fq, function (v) { ui.au.freq = v; renderAuto(); }, 'Frequency');
+    $('au-daywrap').hidden = fq !== 'monthly'; $('au-daynote').hidden = fq !== 'monthly'; $('au-acctwrap').style.gridColumn = fq === 'monthly' ? '' : '1 / -1';
     $('au-wdwrap').hidden = !(fq === 'weekly' || fq === 'biweekly'); $('au-wdlbl').textContent = fq === 'biweekly' ? 'Every other week on' : 'Every week on';
     $('au-wdchips').innerHTML = WORD.map(function (d) { return '<button type="button" data-act="au-wd" data-v="' + d + '" aria-pressed="' + (u.wd === d) + '">' + WDN[d].slice(0, 3) + '</button>'; }).join('');
-    wheelSync();
-    $('au-t-expense').setAttribute('aria-pressed', String(u.type === 'expense')); $('au-t-investment').setAttribute('aria-pressed', String(u.type === 'investment'));
+    daysRender();
+    $('au-t-expense').setAttribute('aria-pressed', String(u.type === 'expense')); $('au-t-investment').setAttribute('aria-pressed', String(u.type === 'investment')); $('au-t-income').setAttribute('aria-pressed', String(u.type === 'income'));
     if (!acctById(Number(u.acct))) u.acct = String(S.accts[0].id);
     ddRender('au-acctdd', S.accts.map(function (a) { return { v: String(a.id), t: a.name }; }), String(u.acct), function (v) { u.acct = v; renderAuto(); }, 'Account');
     var names = list.map(function (c) { return c.n; });
     if (u.cat && names.indexOf(u.cat) < 0) names.push(u.cat);
     ddRender('au-catdd', [{ v: '', t: 'Pick one' }].concat(names.map(function (n) { return { v: n, t: n, c: catColor(u.type, n) }; })), u.cat, function (v) { u.cat = v; u.sub = ''; renderAuto(); }, 'Category');
     var ci = cidx(u.type, u.cat), subs = ci >= 0 ? list[ci].subs.slice() : [];
-    ddRender('au-subdd', [{ v: '', t: 'No subcategory' }].concat(subs.map(function (x) { return { v: x, t: x }; })), u.sub, function (v) { u.sub = v; renderAuto(); }, 'Subcategory');
+    ddRender('au-subdd', [{ v: '', t: 'None' }].concat(subs.map(function (x) { return { v: x, t: x }; })), u.sub, function (v) { u.sub = v; renderAuto(); }, 'Subcategory');
     $('au-subdd').parentNode.classList.toggle('off', !u.cat);
-    var pl = (u.type === 'investment' ? S.iplats : S.plats).slice(); if (u.plat && pl.indexOf(u.plat) < 0) pl.push(u.plat);
-    $('au-platlbl').textContent = u.type === 'investment' ? 'Platform' : 'Paid to';
-    ddRender('au-platdd', [{ v: '', t: 'Pick one' }].concat(pl.map(function (x) { return { v: x, t: x }; })), u.plat, function (v) { u.plat = v; renderAuto(); }, u.type === 'investment' ? 'Platform' : 'Paid to');
+    var pl = (u.type === 'investment' ? S.iplats : u.type === 'income' ? S.isrc : S.plats).slice(); if (u.plat && pl.indexOf(u.plat) < 0) pl.push(u.plat);
+    $('au-platlbl').textContent = u.type === 'investment' ? 'Platform' : u.type === 'income' ? 'Income source' : 'Paid to';
+    ddRender('au-platdd', [{ v: '', t: 'Pick one' }].concat(pl.map(function (x) { return { v: x, t: x }; })), u.plat, function (v) { u.plat = v; renderAuto(); }, u.type === 'investment' ? 'Platform' : u.type === 'income' ? 'Income source' : 'Paid to');
     $('au-savebtn').textContent = u.id ? 'Update autopay' : 'Save autopay';
   }
   function saveAuto() {
@@ -2810,6 +2813,7 @@ button.cat { width: 100%; text-align: left; background: transparent; border: 0; 
     if (!u.cat) { er.textContent = 'Pick a category.'; return; }
     var ci = cidx(u.type, u.cat), subs = ci >= 0 ? clist(u.type)[ci].subs : [];
     if (u.type === 'expense' && S.plats.length && !u.plat) { er.textContent = 'Pick who it is paid to.'; return; }
+    if (u.type === 'income' && S.isrc.length && !u.plat) { er.textContent = 'Pick the income source.'; return; }
     if (u.type === 'investment') {
       if (subs.length && !u.sub) { er.textContent = 'Pick a subcategory.'; return; }
       if (!u.plat) { er.textContent = S.iplats.length ? 'Pick a platform.' : 'Add a platform first (Settings).'; return; }
